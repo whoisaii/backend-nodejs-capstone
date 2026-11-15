@@ -1,0 +1,68 @@
+name: SecondChance CI-CD
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+concurrency:
+  group: secondchance-pages
+  cancel-in-progress: true
+jobs:
+  test:
+    name: Test Node API and MongoDB
+    runs-on: ubuntu-latest
+    services:
+      mongodb:
+        image: mongo:8.0
+        ports: ['27017:27017']
+        options: >-
+          --health-cmd "mongosh --eval 'db.adminCommand({ping:1})'"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      MONGO_URL: mongodb://127.0.0.1:27017
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install API dependencies
+        working-directory: secondChance-backend
+        run: npm ci
+      - name: Check JavaScript syntax
+        run: |
+          node --check secondChance-backend/app.js
+          node --check secondChance-backend/routes/secondChanceItemsRoutes.js
+          node --check secondChance-backend/routes/searchRoutes.js
+          node --check secondChance-backend/routes/authRoutes.js
+          node --check sentiment/index.js
+      - name: Test real MongoDB and API lifecycle
+        working-directory: secondChance-backend
+        run: npm test
+      - name: Install sentiment dependencies
+        working-directory: sentiment
+        run: npm ci
+      - name: Test sentiment package import
+        working-directory: sentiment
+        run: node -e "require('./index.js'); console.log('Natural sentiment service loaded successfully')"
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs
+  deploy:
+    name: Deploy landing page to GitHub Pages
+    needs: test
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
