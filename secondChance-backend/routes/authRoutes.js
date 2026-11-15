@@ -10,6 +10,7 @@ function requireAuth(req,res,next){
  catch{res.status(401).json({error:'Authentication required'});}
 }
 const publicUser=u=>({id:String(u._id),email:u.email,firstName:u.firstName,lastName:u.lastName});
+const issueToken=u=>jwt.sign({sub:String(u._id)},secret(),{algorithm:'HS256',expiresIn:'1h'});
 router.post('/register',async(req,res,next)=>{
  try{
   const {email,password,firstName='',lastName=''}=req.body;
@@ -17,7 +18,8 @@ router.post('/register',async(req,res,next)=>{
   const db=await connectToDatabase();
   const user={email:email.toLowerCase().trim(),passwordHash:await bcrypt.hash(password,12),firstName:firstName.slice(0,100),lastName:lastName.slice(0,100)};
   const result=await db.collection('users').insertOne(user);
-  res.status(201).json({message:'User registered successfully',user:publicUser({...user,_id:result.insertedId})});
+  const created={...user,_id:result.insertedId};
+  res.status(201).json({message:'User registered successfully',authtoken:issueToken(created),email:created.email,user:publicUser(created)});
  }catch(e){if(e.code===11000)return res.status(409).json({error:'Email already registered'});next(e);}
 });
 router.post('/login',async(req,res,next)=>{
@@ -26,8 +28,8 @@ router.post('/login',async(req,res,next)=>{
   if(typeof email!=='string'||typeof password!=='string')return res.status(400).json({error:'Email and password required'});
   const db=await connectToDatabase();const user=await db.collection('users').findOne({email:email.toLowerCase().trim()});
   if(!user||!await bcrypt.compare(password,user.passwordHash))return res.status(401).json({error:'Invalid credentials'});
-  const token=jwt.sign({sub:String(user._id)},secret(),{algorithm:'HS256',expiresIn:'1h'});
-  res.json({message:'Login successful',token,user:publicUser(user)});
+  const token=issueToken(user);
+  res.json({message:'Login successful',authtoken:token,userName:user.firstName,userEmail:user.email,token,user:publicUser(user)});
  }catch(e){next(e);}
 });
 async function updateUser(req,res,next){

@@ -10,7 +10,7 @@ test('MongoDB import and item/auth/search API integration',async()=>{
  const server=app.listen(0,'127.0.0.1');await new Promise(r=>server.once('listening',r));
  const base=`http://127.0.0.1:${server.address().port}`;
  async function call(path,method='GET',body,token){
-  const r=await fetch(base+'/api/secondchance'+path,{method,headers:{...(body?{'Content-Type':'application/json'}:{}),...(token?{Authorization:'Bearer '+token}:{})},...(body?{body:JSON.stringify(body)}:{})});return {status:r.status,data:await r.json()};
+  const r=await fetch(base+(path.startsWith('/auth')?'/api':'/api/secondchance')+path,{method,headers:{...(body?{'Content-Type':'application/json'}:{}),...(token?{Authorization:'Bearer '+token}:{})},...(body?{body:JSON.stringify(body)}:{})});return {status:r.status,data:await r.json()};
  }
  try{
   assert.equal(await loadData(),16);
@@ -21,10 +21,10 @@ test('MongoDB import and item/auth/search API integration',async()=>{
   assert.equal((await call('/search?age_years=invalid')).status,400);
   assert.equal((await call('/search?name=%5B')).status,200);
   const user={email:'test@example.com',password:crypto.randomBytes(16).toString('hex'),firstName:'Test',lastName:'User'};
-  assert.equal((await call('/auth/register','POST',user)).status,201);
+  const registered=await call('/auth/register','POST',user);assert.equal(registered.status,201);assert.equal(registered.data.email,user.email);assert.ok(registered.data.authtoken);
   assert.equal((await call('/auth/register','POST',user)).status,409);
   assert.equal((await call('/auth/login','POST',{email:user.email,password:'wrong'})).status,401);
-  const login=await call('/auth/login','POST',user);assert.equal(login.status,200);const token=login.data.token;
+  const login=await call('/auth/login','POST',user);assert.equal(login.status,200);assert.ok(login.data.authtoken);assert.equal(login.data.userName,'Test');assert.equal(login.data.userEmail,user.email);const token=login.data.authtoken;
   assert.equal((await call('/auth/update','PUT',{firstName:'Updated'},token)).data.user.firstName,'Updated');
   assert.equal((await call('/auth/update','PUT',{firstName:'Unauthorized'})).status,401);
   assert.equal((await call('/items','POST',{name:'chair',category:'Office',condition:'Good'})).status,401);

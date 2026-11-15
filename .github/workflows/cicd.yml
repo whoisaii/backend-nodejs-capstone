@@ -32,9 +32,11 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Install API dependencies
+      - name: Install and Run Linter
         working-directory: secondChance-backend
-        run: npm ci
+        run: |
+          npm ci
+          npm run lint
       - name: Check JavaScript syntax
         run: |
           node --check secondChance-backend/app.js

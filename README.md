@@ -14,11 +14,11 @@ A reuse marketplace capstone based on the IBM starter.
 4. Run `npm run seed` to import 16 documents into an empty collection.
 5. Run `npm start`; the API listens on port 3060.
 
-Routes: `/api/secondchance/items`, `/api/secondchance/items/:id`, `/api/secondchance/search`, and `/api/secondchance/auth/{register,login,update}`. Item uploads and changes require a Bearer token; changes are restricted to the item's owner.
+Routes: `/api/secondchance/items`, `/api/secondchance/items/:id`, `/api/secondchance/search`, and `/api/auth/{register,login,update}`. Item uploads and changes require a Bearer token; changes are restricted to the item's owner.
 
 ## Checks and deployment
 Run `npm test` in the backend with MONGO_URL set to a local MongoDB service. Tests create a unique test database. The GitHub Actions workflow starts MongoDB, installs dependencies, checks syntax, tests the API and Natural import, then deploys `docs` to GitHub Pages.
 
 The original React frontend remains in `secondChance-frontend` as starter reference; `docs` is the maintained static frontend.
 
-Public landing page: https://whoisaii.github.io/secondchance-capstone/
+Public landing page: https://whoisaii.github.io/backend-nodejs-capstone/

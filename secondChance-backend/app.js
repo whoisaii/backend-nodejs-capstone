@@ -6,6 +6,8 @@ const connectToDatabase=require('./models/db');
 const app=express();
 app.use(cors({origin:process.env.FRONTEND_ORIGIN || 'http://localhost:8080'}));
 app.use(express.json({limit:'100kb'}));
+app.use('/api/auth',require('./routes/authRoutes'));
+// Compatibility alias for older clients.
 app.use('/api/secondchance/auth',require('./routes/authRoutes'));
 app.use('/api/secondchance/items',require('./routes/secondChanceItemsRoutes'));
 app.use('/api/secondchance/search',require('./routes/searchRoutes'));
